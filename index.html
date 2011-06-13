@@ -1,0 +1,72 @@
+<html><head>
+<script src="jquery-min-1.4.2.js"></script>
+<script src="jquery-class2class.js"></script>
+<script>
+var files={ main:"This is main", sub:"This is sub" };
+TextEditor=function () {};
+TextEditor.prototype={
+  list:function () {
+     var itemList=this.itemList();
+	 itemList.empty();
+     for (var n in files) {
+       itemList.append("<span class=item fileName='"+n+"'>"+n+"</span><br/>");
+     }
+  },
+  open: function (item) {
+     this.curItem=item;
+	 var fn=this.curFileName();
+     this.textArea().val(files[fn]); 
+     this.status().text("Loaded - "+this.curFileName());
+  },
+  curFileName: function () {
+     return this.curItem.fileName;  
+  },
+  save:function () {
+     files[this.curFileName()]=this.textArea().val();
+     this.status().text("Saved - "+this.curFileName());
+  },
+  // Event handler, automatically bound to "click" Event of CSS-class "textEditor-new" 
+  onNewClick: function () {
+	 var nf=this.name().val();
+	 files[nf]="";
+	 this.list();
+  },
+  // Event handler, automatically bound to "change" Event of CSS-class "textEditor-textArea" 
+  onTextAreaChange: function () {
+  	 this.save();
+  }
+};
+Item=function (jq) {
+   this.fileName=jq.attr("fileName");
+};
+Item.prototype={
+  // Event handler, automatically bound to "click" Event of CSS-class "item" 
+  onClick:function () {
+     TextEditor.closestFrom(this).open(this);
+  }
+};
+$(function () {
+   // Bind Javascript-class TextEditor into CSS-class "textEditor"
+   // The accessor methods: name(), new(), itemList(), textArea(), status() is created. 
+   TextEditor.bindCSS("textEditor","name,new,itemList,textArea,status");
+   // Bind Javascript-class Item into CSS-class "item"
+   Item.bindCSS("item");
+   var t=Class2class.get($(".textEditor"));
+   t.list();
+});
+</script>
+</head>
+<body>
+	<h1>Very Simple Text Editor</h1>
+	<div class="textEditor">
+	  <input class="textEditor-name"/>
+	  <button class="textEditor-new">New</button><br/>
+	  <div class="textEditor-itemList">
+	  </div>
+	  <div class="textEditor-editPane"> 
+	    <textarea cols=40 rows=10 class=textEditor-textArea></textarea>
+	  </div>
+	  <span class="textEditor-status"></span>
+	</div>
+</body>
+</html>
