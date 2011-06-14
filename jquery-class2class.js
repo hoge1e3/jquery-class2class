@@ -19,6 +19,9 @@
  *           CSS-class names of the subParts should be "foo-bar" and "foo-baz".
  *           The Javascrit-class will have accessor bar() and baz(), 
  *           which gets the subparts having CSS-class of "foo-bar" and "foo-baz" respectively.
+ *    - Event handlers of C are added, if J defines methods with name onXXXX, XXXX is an event type.
+ *    - Event handlers of subParts are added, if J defines methods with name onYYYYXXXX,
+ *       YYYY is subPart's name. XXXX is an event type (any cases are accepted)
  *                     
  * @param {String} cssName   the CSS-class name to which bounded to this class
  * @param {String} subParts  the comma-separated names which indicates subParts' name
@@ -26,8 +29,15 @@
 Function.prototype.bindCSS=function (cssName, subParts) {
    var obj=Class2class.get;
    var klass=this;
+   klass.cssBounded=true;
+   if (cssName==null && klass.prototype.cssName) cssName=klass.prototype.cssName();
+   if (cssName==null) throw "cssName is null!";
+   if (klass.prototype.cssName==null) klass.prototype.cssName=function (){return cssName;};
+   if (subParts==null && klass.prototype.subPartsNames) subParts=klass.prototype.subPartsNames();
    if (typeof subParts=="string") subParts=subParts.split(/,/);
-   if (subParts==null) subParts=[];
+   if (subParts==null) {      
+      subParts=[];
+   }
    Class2class.boundedCSS[cssName]=this;   
    for (var k in this.prototype) {
       if (k.match(/^on/)) {
@@ -35,47 +45,46 @@ Function.prototype.bindCSS=function (cssName, subParts) {
       }
    }
    function parseEventHandler(k) {
-	  var max=0,subPartName;
-	  for (var i in subParts) {
-	  	 var l=subParts[i].length;
-		 if (l>max && startsWith(k,subParts[i])){
-		 	max=l;
-			subPartName=subParts[i];
-		 }	  	
-	  }  
+     var max=0,subPartName;
+      for (var i=0 ; i<subParts.length ; i++) {
+           var l=subParts[i].length;
+         if (l>max && startsWith(k,subParts[i])){
+             max=l;
+            subPartName=subParts[i];
+         }          
+      }  
       var methodName="on"+k;
-	  if (subPartName) {
-	  	// Handler of subpart
-		var type=k.substring(max);
+      if (subPartName) {
+          // Handler of subpart
+        var type=k.substring(max);
         type=type.toLowerCase();
-		//alert("Handler of "+subPartName+" - "+type+" "+methodName);
-		$("."+cssName+"-"+subPartName).live(type,function () {
-			var t=klass.closestFrom(this);
+        //alert("Handler of "+subPartName+" - "+type+" "+methodName);
+        $("."+cssName+"-"+subPartName).live(type,function () {
+            var t=klass.closestFrom(this);
             t[methodName].apply(t,arguments);
-		});
-	  } else {
-	  	// Handler of this object itself
-		var type=k;
+        });
+      } else {
+          // Handler of this object itself
+        var type=k;
         type=type.toLowerCase();
-		//alert("Handler of this object - "+type);
+        //alert("Handler of this object - "+type);
         $("."+cssName).live(type,function () {
            var t=obj(this);
            t[methodName].apply(t,arguments);
         });
-	  }
+      }
    }
    function startsWith(str, head) {
-   	  return str.substring(0,head.length).toLowerCase()==head.toLowerCase();
+         return str.substring(0,head.length).toLowerCase()==head.toLowerCase();
    }
    // subParts accessor methods
    for (var i in subParts) {
        (function(p){
-		   	klass.prototype[p] = function(f){
-		   		return this.jq.find("."+cssName+"-"+p);
-		   	};
-	   })(subParts[i]);
+               klass.prototype[p] = function(f){
+                   return this.jq.find("."+cssName+"-"+p);
+               };
+       })(subParts[i]);
    }
-   klass.cssName=cssName;
    // helper methods
    /**
     * closestFrom is a class method which find the object of this class bounded to the closest parent element from f.
@@ -98,7 +107,7 @@ Function.prototype.bindCSS=function (cssName, subParts) {
     * @param {Object} n
     */
    klass.prototype.find=function (n) {
-      if (n.cssName) return n.findFrom(this.jq);
+      if (n.cssBounded) return n.findFrom(this.jq);
       return this.jq.find(n);
    };
    /**
@@ -106,7 +115,7 @@ Function.prototype.bindCSS=function (cssName, subParts) {
     * @param {Object} n
     */
    klass.prototype.closest=function (n) {
-      if (n.cssName) return n.closestFrom(this.jq);
+      if (n.cssBounded) return n.closestFrom(this.jq);
       return this.jq.closest(n);
    };
 
@@ -115,7 +124,7 @@ Class2class={};
 Class2class.boundedCSS={};
 Class2class.get=function (jq) {
      jq=$(jq);
-	 if (jq[0]==null) return null;
+     if (jq[0]==null) return null;
      var res=$.data(jq[0],"obj");
      if (res) return res;
      (function () {
