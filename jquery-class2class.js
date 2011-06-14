@@ -1,3 +1,9 @@
+/*
+  jquery-class2class
+ Copyright hoge1e3 all rights reseved.
+ Licensed under the MIT license.
+*/
+
 /**
  * <Function>.bindCSS  
  *   Bind this Function(as Javascript-class) into a CSS-class
